@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sicky Snake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game, aiming for a polished, cartoony mobile aesthetic */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif; /* Friendlier, cartoony font */
+            background-color: #0d1a1b; /* Dark jungle background */
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            background-image: linear-gradient(135deg, #1c353b 25%, #0d1a1b 75%);
+        }
+
+        .game-container {
+            position: relative; /* Needed for absolute positioning of the sound button */
+            width: 100%;
+            max-width: 500px; /* Max width for desktop/tablet viewing */
+            background-color: #0f2d31;
+            border: 8px solid #005a5a; /* Teal border for jungle theme */
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 25px rgba(140, 198, 63, 0.8); /* Stronger green glow */
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        canvas {
+            background-color: #2e4d52; /* Darker, themed background for the game area */
+            border: 4px solid #005a5a;
+            border-radius: 12px;
+            touch-action: none;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            /* Important: Width set to 100% of its container for responsiveness, height is set by JS */
+            width: 100%; 
+            aspect-ratio: 1 / 1; /* Ensure it stays square even before JS runs */
+        }
+
+        .game-title {
+            font-size: 3.5rem;
+            color: #ffd700; /* Yellow */
+            text-shadow: 4px 4px 0 #7e3a8f, 6px 6px 0 #3b5e2f; /* Purple and Green outline/depth */
+            line-height: 1;
+            margin: 0;
+            padding: 0.5rem 0;
+            font-weight: 700;
+        }
+
+        /* --- GAME INFO BAR (Now contains Pause Button) --- */
+        .game-info {
+            display: flex;
+            justify-content: space-around; /* Changed to space-around to center the pause button */
+            align-items: center;
+            width: 100%;
+            font-size: 1.5rem;
+            padding: 0 0.5rem; /* Reduced padding slightly */
+            color: #b3e39d;
+            font-weight: 500;
+        }
+        
+        /* --- SOUND BUTTON STYLES (MADE SMALLER) --- */
+        .sound-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 5;
+            background-color: #1a4d52;
+            padding: 0; 
+            width: 45px; /* Reduced from 55px */
+            height: 45px; /* Reduced from 55px */
+            border-radius: 10px; 
+            border: 3px solid #b3e39d;
+            box-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 6px 0 #004040, 
+                inset 0 0 15px rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .sound-button.muted {
+            background-color: #521a1a;
+            border-color: #e39d9d;
+            box-shadow: 
+                0 0 8px rgba(247, 160, 146, 0.8),
+                0 6px 0 #400000,
+                inset 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .sound-button:active {
+            box-shadow: 
+                0 0 5px rgba(255, 215, 0, 0.5),
+                0 2px 0 #004040;
+            transform: translateY(4px);
+        }
+        
+        .sound-icon {
+            width: 25px; /* Reduced from 35px */
+            height: 25px; /* Reduced from 35px */
+            fill: #ffd700;
+            transition: fill 0.15s ease;
+        }
+
+        .sound-button.muted .sound-icon {
+            fill: #f7a092;
+        }
+
+        /* Generic Button Style (for Start/Restart) */
+        button:not(.sound-button):not(.control-button):not(.pause-button) {
+            background-color: #8cc63f;
+            color: #0f2d31;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            box-shadow: 0 6px 0 #6aa84f, inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            transition: all 0.1s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:not(.sound-button):not(.control-button):not(.pause-button):active {
+            box-shadow: 0 2px 0 #6aa84f, inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            transform: translateY(4px);
+        }
+
+        /* --- D-PAD CONTROL STYLES --- */
+        .control-panel {
+            /* Increased gap for better touch separation */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem; /* INCREASED VERTICAL GAP for more space */
+            max-width: 280px; /* Increased max-width to spread L/R buttons out */
+            width: 100%;
+            margin-top: 1.5rem; /* Increased top margin for separation from canvas */
+            padding: 0 1rem;
+        }
+
+        .horizontal-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .control-button {
+            background-color: #005a5a;
+            color: #e0e0e0;
+            font-size: 2rem; /* Slightly larger arrows */
+            padding: 0;
+            width: 70px; /* INCREASED SIZE */
+            height: 70px; /* INCREASED SIZE */
+            border-radius: 15px;
+            font-weight: 700;
+            box-shadow: 0 6px 0 #004040, inset 0 2px 4px rgba(255, 255, 255, 0.2); /* Deeper shadow */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-button.arrow-up, 
+        .control-button.arrow-down {
+            width: 70px; /* Match new size */
+        }
+
+        .control-button:active {
+            box-shadow: 0 1px 0 #004040;
+            transform: translateY(5px); /* Increased press depth */
+        }
+        /* --- END D-PAD CONTROL STYLES --- */
+        
+        /* --- PAUSE BUTTON STYLES (Adapted for Info Bar) --- */
+        .pause-button {
+            /* Adapted for the info bar: smaller, square look */
+            background-color: #e39d9d; /* Reddish base for stop/pause action */
+            color: #0f2d31;
+            font-size: 1rem;
+            padding: 0;
+            width: 50px;
+            height: 50px;
+            border-radius: 10px; /* Square/rounded corners */
+            font-weight: 700;
+            box-shadow: 0 4px 0 #a06e6e, inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        .pause-button:active {
+            box-shadow: 0 1px 0 #a06e6e;
+            transform: translateY(3px);
+        }
+
+        /* Styles for the Play/Pause Icon */
+        .pause-icon {
+            width: 25px; /* Smaller icon */
+            height: 25px;
+            fill: currentColor;
+            transition: transform 0.1s;
+        }
+        /* --- END PAUSE BUTTON STYLES --- */
+
+
+        /* Message Box remains clean and centered */
+        .message-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .message-box.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .message-content {
+            background-color: #0f2d31;
+            border: 6px solid #8cc63f;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(140, 198, 63, 0.8);
+            max-width: 90%;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .message-title {
+            font-size: 3rem;
+            color: #ffd700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #7e3a8f;
+        }
+
+        .message-score {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: #fff;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Container for the Sicky Snake game -->
+    <div class="game-container">
+        
+        <!-- Mute/Unmute Button (Top Right Utility) -->
+        <button id="muteButton" class="sound-button">
+            <!-- Inline SVG for Muted State (Speaker with 'X') -->
+            <svg id="muteIconMuted" class="sound-icon" style="display: none;" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 10V14C4 14.55 4.45 15 5 15H8.5L13 19.5V4.5L8.5 9H5C4.45 9 4 9.45 4 10ZM16.01 10.99L18.49 8.5C18.82 8.17 19.38 8.17 19.71 8.5C20.04 8.83 20.04 9.39 19.71 9.72L17.43 12L19.71 14.28C20.04 14.61 20.04 15.17 19.71 15.5C19.38 15.83 18.82 15.83 18.49 15.5L16.01 13.01L13.53 15.5C13.2 15.83 12.64 15.83 12.31 15.5C11.98 15.17 11.98 14.61 12.31 14.28L14.59 12L12.31 9.72C11.98 9.39 11.98 8.83 12.31 8.5C12.64 8.17 13.2 8.17 13.53 8.5L16.01 10.99Z"/>
+            </svg>
+            <!-- Inline SVG for Unmuted State (Speaker with Waves) -->
+            <svg id="muteIconUnmuted" class="sound-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 10V14C4 14.55 4.45 15 5 15H8.5L13 19.5V4.5L8.5 9H5C4.45 9 4 9.45 4 10ZM16.5 12C16.5 13.5 15.5 14.75 14 15.42V8.58C15.5 9.25 16.5 10.5 16.5 12ZM14 17.5V16.5C18.3 16.5 21.5 13.5 21.5 12C21.5 10.5 18.3 7.5 14 7.5V6.5C18.8 6.5 22.5 10.1 22.5 12C22.5 13.9 18.8 17.5 14 17.5Z"/>
+            </svg>
+        </button>
+
+
+        <!-- Game Title: Sicky Snake -->
+        <h1 class="game-title mt-4">Sicky Snake</h1>
+
+        <!-- Score, PAUSE BUTTON, and High Score Display -->
+        <div class="game-info">
+            <span id="score-display">Score: 0</span>
+            
+            <!-- Pause Button (Now centered in the info bar) -->
+            <button id="pauseButton" class="pause-button">
+                <!-- SVG for Pause Icon ( || ) -->
+                <svg id="pauseIcon" class="pause-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+                <!-- SVG for Play Icon ( > ) -->
+                <svg id="playIcon" class="pause-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <!-- End Pause Button -->
+
+            <span id="high-score-display">High Score: 0</span>
+        </div>
+
+        <!-- The main game canvas (now fluid, size is set by JS) -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- D-Pad Controls for Mobile (Now centered at the bottom) -->
+        <div id="controls" class="control-panel">
+            <button id="up-button" class="control-button arrow-up">▲</button>
+            <div class="horizontal-controls">
+                <button id="left-button" class="control-button arrow-left">◀</button>
+                <button id="right-button" class="control-button arrow-right">▶</button>
+            </div>
+            <button id="down-button" class="control-button arrow-down">▼</button>
+        </div>
+
+
+        <!-- Message Box for Game Over/Start Screen -->
+        <div id="messageBox" class="message-box active">
+            <div id="messageContent" class="message-content">
+                <!-- NEW: Added ID for dynamic updates -->
+                <h2 id="messageTitle" class="message-title">Welcome to Sicky Snake!</h2>
+                <!-- UPDATED: Removed instructions text -->
+                <!-- <p id="messageInstructions" class="message-score text-lg mb-4">Eat the shiny red apples! Control the snake using the **Arrow Keys**, **Swipe**, or the **D-Pad** below.</p> -->
+                
+                <!-- NEW: Separated final score display, hidden until game over -->
+                <p id="finalScoreDisplay" class="message-score hidden"></p> 
+                <button id="startButton">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SOUND MANAGER CLASS ---
+        class SoundManager {
+            constructor() {
+                this.sounds = {};
+                this.isUnlocked = false; 
+                this.isMuted = false; 
+                
+                // Corrected file names
+                this.loadSound('eat', 'eating-apple-cut.mp3.mp3.mp3');
+                this.loadSound('gameOver', 'game-over-arcade-cut.mp3.mp3.mp3');
+            }
+
+            loadSound(name, src) {
+                const url = src; 
+                const audio = new Audio(url);
+                audio.preload = 'auto';
+                
+                audio.oncanplaythrough = () => console.log(`[SoundManager] '${name}' loaded successfully.`);
+                audio.onerror = (e) => console.error(`[SoundManager] Failed to load '${name}'.`, e);
+                
+                this.sounds[name] = audio;
+            }
+
+            /**
+             * Toggles the mute state.
+             * @returns {boolean} The new mute state (true if muted).
+             */
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                return this.isMuted;
+            }
+
+            /**
+             * Attempts to unlock browser audio by playing and pausing a sound. 
+             * This must be called from a user interaction handler (like a button click).
+             */
+            unlock() {
+                if (this.isUnlocked || this.isMuted) return; 
+
+                const sound = this.sounds['eat']; 
+                if (sound) {
+                    sound.play().then(() => {
+                        sound.pause();
+                        sound.currentTime = 0;
+                        this.isUnlocked = true;
+                        console.log("[SoundManager] Audio unlocked successfully via user gesture.");
+                    }).catch(e => {
+                        console.error("[SoundManager] Failed to unlock audio context. Audio may not work.", e);
+                        this.isUnlocked = true;
+                    });
+                }
+            }
+
+            play(name) {
+                if (this.isMuted) return; 
+                
+                const sound = this.sounds[name];
+                if (sound) {
+                    // Reset to the beginning and attempt to play
+                    sound.currentTime = 0; 
+                    sound.play().catch(e => {
+                        console.error(`[SoundManager] Failed to play '${name}'.`, e);
+                    });
+                }
+            }
+        }
+
+        // Initialize the Sound Manager
+        const soundManager = new SoundManager();
+
+        // --- GAME CONSTANTS ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Fixed grid units (e.g., 20x20 grid)
+        const GRID_UNITS = 20; 
+        const MAX_CANVAS_SIZE = 400; // Max size for desktop/tablet viewing
+        
+        // Starting speed is slower (150ms)
+        const INITIAL_SPEED = 150; 
+
+        // Dynamic game properties (set by setCanvasSize function)
+        let BOX_SIZE; 
+        let CANVAS_SIZE;
+        let GRID_COUNT = GRID_UNITS; // Should always be 20
+
+        // --- GAME STATE ---
+        let snake = [];
+        let food = {};
+        let dx = 0; 
+        let dy = 0;      
+        let score = 0;
+        let isChangingDirection = false;
+        let gameLoopTimeout;
+        let gameIsRunning = false;
+        let isPaused = false; 
+        let currentSpeed = INITIAL_SPEED;
+        const MIN_SPEED = 50; // Fastest the snake can go
+
+        // --- UI ELEMENTS ---
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const messageBox = document.getElementById('messageBox');
+        const messageContent = document.getElementById('messageContent');
+        const startButton = document.getElementById('startButton');
+        // UPDATED: messageInstructions element removed from HTML, but reference kept for consistency in JS
+        const messageTitle = document.getElementById('messageTitle');
+        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+        
+        // Mute button elements
+        const muteButton = document.getElementById('muteButton');
+        const muteIconUnmuted = document.getElementById('muteIconUnmuted');
+        const muteIconMuted = document.getElementById('muteIconMuted');
+
+        // Pause button elements
+        const pauseButton = document.getElementById('pauseButton');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const playIcon = document.getElementById('playIcon');
+        
+        // UI Elements for D-Pad
+        const upButton = document.getElementById('up-button');
+        const downButton = document.getElementById('down-button');
+        const leftButton = document.getElementById('left-button');
+        const rightButton = document.getElementById('right-button');
+
+        // Note: The messageInstructions element was removed from the HTML for the start screen
+        // But for the pause logic, we will define a temporary message area if needed or reuse finalScoreDisplay
+        // For simplicity, we'll redefine the pause message logic slightly below.
+
+        // --- LOCAL STORAGE (High Score) ---
+        let highScore = parseInt(localStorage.getItem('sickySnakeHighScore')) || 0;
+        highScoreDisplay.textContent = `High Score: ${highScore}`;
+        
+        // --- Mute UI Update Function ---
+        function updateMuteIcon() {
+            if (soundManager.isMuted) {
+                muteButton.classList.add('muted');
+                muteIconUnmuted.style.display = 'none';
+                muteIconMuted.style.display = 'block';
+            } else {
+                muteButton.classList.remove('muted');
+                muteIconUnmuted.style.display = 'block';
+                muteIconMuted.style.display = 'none';
+            }
+        }
+
+        // --- PAUSE LOGIC ---
+        function togglePause() {
+            if (!gameIsRunning) return;
+
+            isPaused = !isPaused;
+
+            if (isPaused) {
+                // Game paused
+                clearTimeout(gameLoopTimeout);
+                
+                // Update message box for pause screen
+                messageBox.classList.add('active');
+                messageContent.style.borderColor = '#ffd700'; // Yellow border for pause
+                messageContent.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
+
+                // UPDATED: Use finalScoreDisplay to show the pause prompt
+                messageTitle.textContent = 'Game Paused';
+                finalScoreDisplay.classList.remove('hidden'); 
+                finalScoreDisplay.innerHTML = 'Take a break! Press Continue to get back to the jungle.';
+                startButton.textContent = 'Continue';
+                
+                // Update pause button icon
+                pauseIcon.style.display = 'none';
+                playIcon.style.display = 'block';
+
+            } else {
+                // Game resumed
+                messageBox.classList.remove('active');
+                
+                // Restore default message box styles
+                messageContent.style.borderColor = '#8cc63f';
+                messageContent.style.boxShadow = '0 0 30px rgba(140, 198, 63, 0.8)';
+
+                // Update pause button icon
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+
+                // Restart the game loop
+                requestAnimationFrame(mainLoop);
+            }
+        }
+
+        // --- RESPONSIVE RESIZING LOGIC ---
+        function setCanvasSize() {
+            const containerWidth = canvas.parentNode.clientWidth;
+            let availableWidth = Math.min(containerWidth - 30, MAX_CANVAS_SIZE); 
+            let newCanvasSize = Math.floor(availableWidth / GRID_UNITS) * GRID_UNITS;
+
+            canvas.width = newCanvasSize;
+            canvas.height = newCanvasSize;
+            
+            CANVAS_SIZE = newCanvasSize;
+            BOX_SIZE = newCanvasSize / GRID_UNITS; 
+            
+            drawGame();
+        }
+
+        // Run on load and on resize
+        window.onload = () => {
+            setCanvasSize();
+            // Initializing game position after size is set
+            initGame(); 
+            drawGame();
+            updateMuteIcon(); // Set the initial icon state
+            
+            // Set initial screen text state (Startup Screen)
+            messageTitle.textContent = 'Welcome to Sicky Snake!';
+            finalScoreDisplay.classList.add('hidden'); // Hide the score/instruction area
+            startButton.textContent = 'Start Game';
+        };
+
+        window.onresize = () => {
+            setCanvasSize();
+        };
+        
+        // --- CANVAS DRAWING UTILITIES (High Quality Look) ---
+
+        /**
+         * Draws a rounded rectangle path.
+         */
+        function roundRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.arcTo(x + width, y, x + width, y + radius, radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+            ctx.lineTo(x + radius, y + height);
+            ctx.arcTo(x, y + height, x, y + height - radius, radius);
+            ctx.lineTo(x, y + radius);
+            ctx.arcTo(x, y, x + radius, y, radius);
+            ctx.closePath();
+        }
+
+        function drawSnakeHead(segment) {
+            const x = segment.x;
+            const y = segment.y;
+            const radius = BOX_SIZE / 4;
+
+            // 1. Draw the main head shape (Rounded box)
+            roundRect(x, y, BOX_SIZE, BOX_SIZE, radius);
+            
+            const headGradient = ctx.createLinearGradient(x, y, x, y + BOX_SIZE);
+            headGradient.addColorStop(0, '#90ee90'); // Light Green (Highlight)
+            headGradient.addColorStop(1, '#6aa84f'); // Base Green (Snake Color)
+            ctx.fillStyle = headGradient;
+            ctx.fill();
+            
+            // Draw a dark border
+            ctx.strokeStyle = '#3b5e2f';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 2. Draw Cartoony Eyes
+            const eyeSize = BOX_SIZE / 6;
+            const eyeOffset = BOX_SIZE / 4;
+            const pupilSize = eyeSize / 2;
+
+            // White Sclera (left eye)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x + BOX_SIZE / 2 - eyeOffset, y + BOX_SIZE / 3, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White Sclera (right eye)
+            ctx.beginPath();
+            ctx.arc(x + BOX_SIZE / 2 + eyeOffset, y + BOX_SIZE / 3, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Black Pupil (left)
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(x + BOX_SIZE / 2 - eyeOffset, y + BOX_SIZE / 3, pupilSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Black Pupil (right)
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(x + BOX_SIZE / 2 + eyeOffset, y + BOX_SIZE / 3, pupilSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawSnakeBody(segment) {
+            const x = segment.x;
+            const y = segment.y;
+            const radius = BOX_SIZE / 4;
+
+            // Body gradient for smooth, glossy look
+            const bodyGradient = ctx.createLinearGradient(x, y, x, y + BOX_SIZE);
+            bodyGradient.addColorStop(0, '#7bb84f'); 
+            bodyGradient.addColorStop(1, '#57913a'); 
+            ctx.fillStyle = bodyGradient;
+            
+            roundRect(x, y, BOX_SIZE, BOX_SIZE, radius);
+            ctx.fill();
+            
+            // Draw a subtle border
+            ctx.strokeStyle = '#3b5e2f'; 
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawSnakeSegment(segment, index) {
+            if (index === 0) {
+                drawSnakeHead(segment);
+            } else {
+                drawSnakeBody(segment);
+            }
+        }
+
+        function drawFood() {
+            const x = food.x;
+            const y = food.y;
+            const center = x + BOX_SIZE / 2;
+            const middle = y + BOX_SIZE / 2;
+            const radius = BOX_SIZE * 0.4;
+            
+            ctx.save();
+            ctx.translate(center, middle);
+            
+            // 1. Draw the main apple shape (Red with gradient)
+            const appleGradient = ctx.createRadialGradient(0, 0, 1, 0, 0, radius * 1.5);
+            appleGradient.addColorStop(0, '#ff4136'); // Bright Red
+            appleGradient.addColorStop(1, '#cc0000'); // Deep Red
+            ctx.fillStyle = appleGradient;
+            
+            // Use arc for a rounded base shape, not perfectly circular
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Draw a bite mark (optional but adds character)
+            // Use the canvas background color for the 'bite'
+            ctx.fillStyle = '#2e4d52'; 
+            ctx.beginPath();
+            ctx.arc(radius * 0.4, -radius * 0.4, radius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Draw a stem (Brown)
+            ctx.fillStyle = '#8b4513';
+            // Scale stem size dynamically based on BOX_SIZE
+            ctx.fillRect(-1 * (BOX_SIZE/40), -radius - (BOX_SIZE/10), 2 * (BOX_SIZE/40), (BOX_SIZE/10)); 
+            
+            // 4. Draw a leaf (Green)
+            ctx.fillStyle = '#3a8044';
+            ctx.beginPath();
+            // Scale leaf size dynamically based on BOX_SIZE
+            ctx.ellipse(3 * (BOX_SIZE/20), -radius - 1 * (BOX_SIZE/20), 4 * (BOX_SIZE/20), 2 * (BOX_SIZE/20), Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawGame() {
+            // Clear the entire canvas
+            ctx.fillStyle = '#2e4d52'; // Canvas background
+            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+            // Only draw food and snake if BOX_SIZE is initialized (i.e., not 0)
+            if (BOX_SIZE > 0) {
+                drawFood();
+                snake.forEach(drawSnakeSegment);
+            }
+        }
+
+        // --- GAME FUNCTIONS (LOGIC) ---
+
+        function initGame() {
+            // Reset game state
+            snake = [
+                { x: 4 * BOX_SIZE, y: 0 },
+                { x: 3 * BOX_SIZE, y: 0 },
+                { x: 2 * BOX_SIZE, y: 0 },
+                { x: 1 * BOX_SIZE, y: 0 },
+                { x: 0 * BOX_SIZE, y: 0 }
+            ];
+            // Start moving right
+            dx = BOX_SIZE; 
+            dy = 0;
+            score = 0;
+            currentSpeed = INITIAL_SPEED;
+            isPaused = false; // Ensure not paused on init
+            scoreDisplay.textContent = `Score: 0`;
+            isChangingDirection = false;
+            generateFood();
+
+            // Reset pause button icon to 'Pause' for next game
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        }
+
+        function generateFood() {
+            // Generate food at a random grid location that is NOT under the snake
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * GRID_COUNT) * BOX_SIZE,
+                    y: Math.floor(Math.random() * GRID_COUNT) * BOX_SIZE
+                };
+            } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+            food = newFood;
+        }
+        
+        function moveSnake() {
+            // Create a new head for the snake
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            
+            // Add the new head to the beginning of the snake array
+            snake.unshift(head);
+            
+            // Check if the snake ate the food
+            if (head.x === food.x && head.y === food.y) {
+                // Play the eating sound
+                soundManager.play('eat');
+                
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+
+                // Speed up the game by 10ms (more noticeable acceleration)
+                if (currentSpeed > MIN_SPEED) {
+                    currentSpeed = Math.max(MIN_SPEED, currentSpeed - 10);
+                }
+                
+                // Generate new food
+                generateFood();
+            } else {
+                // Remove the tail (only remove if food was NOT eaten)
+                snake.pop();
+            }
+
+            isChangingDirection = false; // Allow direction changes again
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+
+            // 1. Collision with self (checking against all body segments except the head)
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) return true;
+            }
+
+            // 2. Collision with wall
+            const hitLeftWall = head.x < 0;
+            const hitRightWall = head.x >= CANVAS_SIZE;
+            const hitTopWall = head.y < 0;
+            const hitBottomWall = head.y >= CANVAS_SIZE;
+
+            return hitLeftWall || hitRightWall || hitTopWall || hitBottomWall;
+        }
+
+        function gameOver() {
+            gameIsRunning = false;
+            isPaused = false; // Ensure pause state is off
+            clearTimeout(gameLoopTimeout);
+            
+            // Play the game over sound
+            soundManager.play('gameOver');
+
+            // Update High Score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('sickySnakeHighScore', highScore);
+            }
+            highScoreDisplay.textContent = `High Score: ${highScore}`;
+
+            // Show Game Over message
+            // UPDATED: Use new elements for Game Over message
+            messageTitle.textContent = 'Game Over!';
+            // The instructions element is now removed from HTML
+            finalScoreDisplay.classList.remove('hidden'); // Show final score
+            finalScoreDisplay.innerHTML = `Your Final Score: ${score}`; 
+            startButton.textContent = 'Play Again';
+
+            // Set message box style for Game Over
+            messageContent.style.borderColor = '#8cc63f';
+            messageContent.style.boxShadow = '0 0 30px rgba(140, 198, 63, 0.8)';
+            messageBox.classList.add('active');
+
+            // Reset pause button icon state to 'Pause' for next game
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        }
+
+        function mainLoop() {
+            if (!gameIsRunning || isPaused) return; // Halt if paused or not running
+
+            if (checkCollision()) {
+                gameOver();
+                return;
+            }
+            
+            drawGame();
+            moveSnake();
+            
+            // Schedule the next frame with the current speed
+            gameLoopTimeout = setTimeout(() => {
+                requestAnimationFrame(mainLoop);
+            }, currentSpeed);
+        }
+
+        // --- INPUT HANDLING (D-Pad, Keyboard, and Swipe) ---
+
+        /**
+         * Handles input from D-Pad buttons and keyboard keys.
+         * @param {number} newDx - The requested new horizontal velocity.
+         * @param {number} newDy - The requested new vertical velocity.
+         */
+        function handleInput(newDx, newDy) {
+            // Check for pause state before processing movement
+            if (!gameIsRunning || isChangingDirection || isPaused) return; 
+
+            // Check for 180 degree reversal
+            let isReversal = (newDx === -dx && newDx !== 0) || (newDy === -dy && newDy !== 0);
+
+            if (!isReversal) {
+                dx = newDx;
+                dy = newDy;
+                isChangingDirection = true;
+            }
+        }
+
+        // Keyboard Event Listeners
+        document.addEventListener('keydown', (e) => {
+            const keyPressed = e.key;
+
+            if (keyPressed === 'ArrowLeft') handleInput(-BOX_SIZE, 0);
+            else if (keyPressed === 'ArrowUp') handleInput(0, -BOX_SIZE);
+            else if (keyPressed === 'ArrowRight') handleInput(BOX_SIZE, 0);
+            else if (keyPressed === 'ArrowDown') handleInput(0, BOX_SIZE);
+            else if (keyPressed === 'p' || keyPressed === 'P' || keyPressed === ' ') togglePause(); // 'P' or Spacebar for pause/play
+        });
+
+        // D-Pad Button Event Listeners
+        upButton.addEventListener('click', () => handleInput(0, -BOX_SIZE));
+        downButton.addEventListener('click', () => handleInput(0, BOX_SIZE));
+        leftButton.addEventListener('click', () => handleInput(-BOX_SIZE, 0));
+        rightButton.addEventListener('click', () => handleInput(BOX_SIZE, 0));
+
+        // Pause Button Event Listener
+        pauseButton.addEventListener('click', togglePause);
+
+
+        // --- INPUT HANDLING (Touch/Swipe) ---
+        let touchstartX = 0;
+        let touchstartY = 0;
+        let touchendX = 0;
+        let touchendY = 0;
+        
+        // Use a smaller area for detecting the swipe to be precise
+        canvas.addEventListener('touchstart', (e) => {
+            touchstartX = e.changedTouches[0].screenX;
+            touchstartY = e.changedTouches[0].screenY;
+        }, false);
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameIsRunning || isChangingDirection || isPaused) return; // Check pause state
+
+            touchendX = e.changedTouches[0].screenX;
+            touchendY = e.changedTouches[0].screenY;
+            handleGesture();
+        }, false);
+
+        function handleGesture() {
+            const dx_touch = touchendX - touchstartX;
+            const dy_touch = touchendY - touchstartY;
+            const abs_dx = Math.abs(dx_touch);
+            const abs_dy = Math.abs(dy_touch);
+            
+            // Minimum distance for a swipe to register (e.g., 20 pixels)
+            const minSwipeDistance = 20;
+
+            if (abs_dx > abs_dy && abs_dx > minSwipeDistance) {
+                // Horizontal swipe
+                if (dx_touch < 0) { // Left
+                    handleInput(-BOX_SIZE, 0);
+                } else if (dx_touch > 0) { // Right
+                    handleInput(BOX_SIZE, 0);
+                }
+            } else if (abs_dy > abs_dx && abs_dy > minSwipeDistance) {
+                // Vertical swipe
+                if (dy_touch < 0) { // Up
+                    handleInput(0, -BOX_SIZE);
+                } else if (dy_touch > 0) { // Down
+                    handleInput(0, BOX_SIZE);
+                }
+            }
+        }
+
+        // --- MUTE BUTTON LOGIC ---
+        muteButton.addEventListener('click', () => {
+            // Toggles the mute state internally
+            soundManager.toggleMute();
+            // Updates the icon and button style
+            updateMuteIcon();
+            
+            // If unmuting, try to unlock the audio context
+            if (!soundManager.isMuted) {
+                soundManager.unlock(); 
+            }
+        });
+
+        // --- GAME STARTUP ---
+
+        startButton.addEventListener('click', () => {
+            // Handles both Start Game and Continue (from Pause)
+            if (isPaused) {
+                togglePause(); // Resume game
+            } else {
+                // Step 1: Attempt to unlock the audio system if not muted
+                if (!soundManager.isMuted) {
+                    soundManager.unlock();
+                }
+                
+                // Step 2: Start the game
+                messageBox.classList.remove('active');
+                initGame();
+                gameIsRunning = true;
+                requestAnimationFrame(mainLoop); // Start the game loop
+            }
+        });
+        
+    </script>
+    <!-- Note on Android App Logo:
+    The image you provided ("Gemini_Generated_Image_cqhm5pcqhm5pcqhm.jpg") should be used as the app icon
+    and splash screen image when building the final Android application.
+    The name in the Android manifest should be set to "Sicky Snake".
+    -->
+</body>
+</html>

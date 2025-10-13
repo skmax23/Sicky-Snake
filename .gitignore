@@ -1,0 +1,35 @@
+--- Android Studio / Gradle / Build Files ---
+/local.properties
+/.gradle
+/build
+/app/build
+/out
+/gradle/wrapper/gradle-wrapper.jar
+
+--- Generated / Temporary Files ---
+Ignore Android Studio project files (except settings.gradle and build.gradle)
+.idea/
+.DS_Store
+*.iml
+.cxx/
+/captures
+
+--- Packaging / Binary Files ---
+Android App Bundle and APK files are large and generated during the build
+*.apk
+*.aab
+
+--- Sensitive Files ---
+Keystore files used for signing the app should NEVER be committed
+*.jks
+*.keystore
+
+--- Project Specific (from your original) ---
+/node_modules
+dist/
+/temp/
+.env
+
+--- Additional Ignored Files (often temporary) ---
+/coverage
+/debug.keystore
